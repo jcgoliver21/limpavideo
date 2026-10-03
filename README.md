@@ -1,6 +1,6 @@
 # LimpaVídeo Studio — editor de MP4 quadro a quadro
 
-Aplicação para analisar textos com OCR, editar máscaras em quadros individuais, propagar uma remoção para ocorrências do mesmo texto e exportar um novo MP4 completo. O original não é sobrescrito. A reconstrução usa inpainting; não promete recuperar detalhes que não existem nos quadros restantes.
+Aplicação para analisar textos com OCR, editar máscaras em quadros individuais, detectar textos repetidos e remover automaticamente, propagar uma remoção para ocorrências do mesmo texto e exportar um novo MP4 completo. O original não é sobrescrito. A reconstrução usa inpainting; não promete recuperar detalhes que não existem nos quadros restantes.
 
 **Versão web (sem instalar):** [https://jcgoliver21.github.io/limpavideo/](https://jcgoliver21.github.io/limpavideo/)
 
@@ -68,6 +68,7 @@ Clique em **Processar e exportar vídeo completo**. O resultado é um novo MP4 H
 - Sugestão de texto recorrente em posição semelhante como possível marca d’água — não é uma confirmação automática.
 - Edição manual independente por quadro, máscaras-chave persistentes e lista para reabrir/remover edições.
 - Caixa inicial de máscara a partir da detecção OCR, com margem configurável, expansão pós-máscara de até 20 px e raio de reconstrução de até 25 px.
+- Modo automático que detecta textos repetidos na mesma posição e remove sem pintura manual (também disponível no app local após a análise OCR).
 - Pincel, borracha, desfazer, refazer e navegação quadro a quadro.
 - Prévia comparativa de um quadro com o método, expansão da máscara e raio escolhidos.
 - Propagação geométrica da máscara para ocorrências OCR do mesmo texto, modo de máscara-chave mais próxima e modo fixo.
@@ -81,7 +82,7 @@ Na versão local, o processamento acontece no computador em que o aplicativo est
 ## Limitações importantes
 
 - Somente MP4, até 700 MB; no máximo 100 quadros editados e 3.000 amostras OCR por análise.
-- OCR pode falhar com texto pequeno, estilizado, baixo contraste, movimento rápido ou fora dos intervalos amostrados; não identifica logotipos sem texto de forma confiável.
+- A remoção automática depende do OCR: pode falhar com texto pequeno, estilizado, baixo contraste, movimento rápido ou fora dos intervalos amostrados; não identifica logotipos sem texto de forma confiável. Revise sempre a prévia.
 - A propagação por texto exige que o OCR reconheça o mesmo texto; falhas ou variações no reconhecimento podem deixar trechos sem edição. Revise as caixas detectadas e a prévia.
 - O modo de keyframes mais próximos repete a máscara mais próxima inclusive quando a marca não está visível; use-o com cautela em texto temporário. O modo por texto limita a aplicação aos períodos amostrados em que a ocorrência foi detectada.
 - O app usa inpainting clássico do OpenCV, não preenchimento generativo. Ele pode remover letras, mas não inventa com fidelidade partes complexas escondidas. Regiões grandes, rostos, objetos em movimento ou fundos detalhados podem continuar borrados mesmo com raio maior; quando possível, a melhor solução é reexportar a fonte sem a sobreposição ou usar uma ferramenta de inpainting generativo/remoção de objetos com suporte temporal.

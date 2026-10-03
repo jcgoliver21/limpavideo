@@ -29,6 +29,11 @@ let rangeOut = null;
 let exporting = false;
 let conversion = null;
 let ocrWorker = null;
+let scanning = false;
+let autoTraces = [];
+let manualMaskDirty = false;
+const autoLayer = document.getElementById("autoLayer");
+const autoCtx = autoLayer.getContext("2d");
 
 $("boot").textContent = "Pronto. O vídeo fica só neste navegador.";
 
@@ -87,6 +92,7 @@ function addAction(action) {
   redo = [];
   drawAction(action);
   updateHistory();
+  manualMaskDirty = true;
   $("compare").style.display = "none";
 }
 
@@ -178,9 +184,9 @@ paint.addEventListener("pointercancel", stopDraw);
 $("brush").onclick = () => setTool("brush");
 $("eraser").onclick = () => setTool("eraser");
 $("rectTool").onclick = () => setTool("rect");
-$("undo").onclick = () => { if (actions.length) { redo.push(actions.pop()); redraw(); } };
-$("redo").onclick = () => { if (redo.length) { actions.push(redo.pop()); redraw(); } };
-$("clearMask").onclick = () => { actions = []; redo = []; redraw(); $("compare").style.display = "none"; $("ocrList").replaceChildren(); };
+$("undo").onclick = () => { if (actions.length) { redo.push(actions.pop()); redraw(); manualMaskDirty = true; } };
+$("redo").onclick = () => { if (redo.length) { actions.push(redo.pop()); redraw(); manualMaskDirty = true; } };
+$("clearMask").onclick = () => { actions = []; redo = []; redraw(); manualMaskDirty = true; autoTraces = []; $("compare").style.display = "none"; $("ocrList").replaceChildren(); $("autoList").replaceChildren(); drawAutoOverlay(); };
 $("expand").oninput = () => { $("expandValue").textContent = `${$("expand").value} px`; $("compare").style.display = "none"; };
 
 function rasterMask() {
@@ -194,6 +200,180 @@ function rasterMask() {
     }
   }
   return { mask, count };
+}
+
+function drawAutoOverlay() {
+  autoCtx.clearRect(0, 0, autoLayer.width, autoLayer.height);
+  const boxes = boxesAt(currentTime);
+  for (const box of boxes) {
+    autoCtx.save();
+    autoCtx.strokeStyle = "rgba(255,210,120,.95)";
+    autoCtx.fillStyle = "rgba(255,210,120,.12)";
+    autoCtx.lineWidth = 2;
+    autoCtx.setLineDash([6, 4]);
+    autoCtx.fillRect(box.x, box.y, box.w, box.h);
+    autoCtx.strokeRect(box.x, box.y, box.w, box.h);
+    autoCtx.restore();
+  }
+}
+
+function normalizeText(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, " ").trim();
+}
+
+function centersClose(a, b, threshold) {
+  return Math.abs(a.cx - b.cx) <= threshold && Math.abs(a.cy - b.cy) <= threshold;
+}
+
+function clusterDetections(raw) {
+  const clusters = [];
+  const threshold = Math.max(width, height) * 0.04;
+  for (const item of raw) {
+    const text = normalizeText(item.text);
+    const center = { cx: item.x + item.w / 2, cy: item.y + item.h / 2 };
+    let best = null;
+    for (const cluster of clusters) {
+      if (centersClose(center, cluster, threshold)) {
+        const score = cluster.count * 2 + (cluster.text === text ? 5 : 0) + (text && cluster.text.includes(text) ? 2 : 0);
+        if (!best || score > best.score) best = { cluster, score };
+      }
+    }
+    if (best && (best.score >= 5 || centersClose(center, best.cluster, threshold / 2))) {
+      const cluster = best.cluster;
+      cluster.x.push(item.x);
+      cluster.y.push(item.y);
+      cluster.w.push(item.w);
+      cluster.h.push(item.h);
+      cluster.times.push(item.time);
+      cluster.count++;
+      cluster.textRaw = item.text.length > cluster.textRaw.length ? item.text : cluster.textRaw;
+    } else {
+      clusters.push({
+        x: [item.x], y: [item.y], w: [item.w], h: [item.h],
+        times: [item.time], count: 1,
+        text: text, textRaw: item.text,
+        cx: center.cx, cy: center.cy,
+      });
+    }
+  }
+  return clusters;
+}
+
+function median(values) {
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function finalizeTraces(clusters, totalSamples) {
+  const minFrames = Math.max(2, Math.ceil(totalSamples * 0.34));
+  const minStable = Math.ceil(totalSamples * 0.6);
+  return clusters
+    .filter((cluster) => cluster.count >= minFrames)
+    .map((cluster) => {
+      const recurring = cluster.count >= minStable;
+      return {
+        x: Math.round(median(cluster.x)),
+        y: Math.round(median(cluster.y)),
+        w: Math.round(median(cluster.w)),
+        h: Math.round(median(cluster.h)),
+        text: cluster.textRaw,
+        recurring,
+        times: cluster.times.slice().sort((a, b) => a - b),
+      };
+    });
+}
+
+function boxesAt(time) {
+  const mode = $("autoMode").value;
+  const expand = Number($("expand").value) + 4;
+  const result = [];
+  for (const trace of autoTraces) {
+    const active = mode === "all"
+      ? true
+      : trace.recurring || nearestTimeDistance(trace.times, time) <= 0.5;
+    if (!active) continue;
+    if (mode === "all") {
+      const nearest = nearestBox(trace, time);
+      if (nearest) result.push(padBox(nearest, expand));
+    } else {
+      result.push(padBox({ x: trace.x, y: trace.y, w: trace.w, h: trace.h }, expand));
+    }
+  }
+  return result;
+}
+
+function nearestTimeDistance(times, time) {
+  let best = Infinity;
+  for (const t of times) best = Math.min(best, Math.abs(t - time));
+  return best;
+}
+
+function nearestBox(trace, time) {
+  if (nearestTimeIndex(trace.times, time) < 0) return null;
+  return { x: trace.x, y: trace.y, w: trace.w, h: trace.h };
+}
+
+function nearestTimeIndex(times, time) {
+  let best = -1;
+  let bestDist = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const dist = Math.abs(times[i] - time);
+    if (dist < bestDist) { bestDist = dist; best = i; }
+  }
+  return best;
+}
+
+function padBox(box, pad) {
+  return {
+    x: clamp(box.x - pad, 0, width),
+    y: clamp(box.y - pad, 0, height),
+    w: clamp(box.w + pad * 2, 1, width),
+    h: clamp(box.h + pad * 2, 1, height),
+  };
+}
+
+function maskFromBoxes(boxes, w, h) {
+  const mask = new Uint8Array(w * h);
+  for (const box of boxes) {
+    const x0 = Math.round(box.x);
+    const y0 = Math.round(box.y);
+    const x1 = Math.min(w, x0 + Math.round(box.w));
+    const y1 = Math.min(h, y0 + Math.round(box.h));
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) mask[y * w + x] = 1;
+    }
+  }
+  return mask;
+}
+
+function combinedMaskAt(time, w, h) {
+  const manual = rasterMask().mask;
+  const scaledManual = (width === w && height === h) ? manual : scaleMask(manual, width, height, w, h);
+  const auto = maskFromBoxes(boxesAt(time), w, h);
+  if (width === w && height === h) {
+    for (let i = 0; i < scaledManual.length; i++) if (auto[i]) scaledManual[i] = 1;
+    return scaledManual;
+  }
+  const out = new Uint8Array(w * h);
+  for (let i = 0; i < out.length; i++) out[i] = scaledManual[i] || auto[i] ? 1 : 0;
+  return out;
+}
+
+function sampleTimes() {
+  const maxSamples = 20;
+  const minSamples = 4;
+  const interval = Math.max(0.4, duration / maxSamples);
+  const times = [];
+  for (let t = rangeIn; t < (rangeOut ?? duration); t += interval) times.push(t);
+  for (const p of [0.1, 0.5, 0.9]) {
+    const t = rangeIn + ((rangeOut ?? duration) - rangeIn) * p;
+    if (!times.some((x) => Math.abs(x - t) < 0.2)) times.push(t);
+  }
+  if (times.length < minSamples) {
+    for (let i = 0; i < minSamples; i++) times.push(rangeIn + ((rangeOut ?? duration) - rangeIn) * (i / (minSamples - 1)));
+  }
+  return times.sort((a, b) => a - b);
 }
 
 function scaleMask(mask, sw, sh, dw, dh) {
@@ -229,6 +409,7 @@ async function seekTo(seconds) {
   if (token !== seekToken) return;
   currentTime = video.currentTime;
   frameCtx.drawImage(video, 0, 0, width, height);
+  drawAutoOverlay();
   $("seek").value = String(currentTime);
   $("time").textContent = formatTime(currentTime);
 }
@@ -262,15 +443,22 @@ async function openFile(next) {
   duration = video.duration;
   frameCanvas.width = paint.width = width;
   frameCanvas.height = paint.height = height;
+  autoLayer.width = width;
+  autoLayer.height = height;
   $("stage").style.aspectRatio = `${width} / ${height}`;
   $("seek").max = String(duration);
   $("seek").step = "0.04";
   actions = [];
   redo = [];
+  autoTraces = [];
   rangeIn = 0;
   rangeOut = null;
+  manualMaskDirty = false;
   redraw();
+  drawAutoOverlay();
   updateRange();
+  $("autoList").replaceChildren();
+  $("ocrList").replaceChildren();
   $("pills").replaceChildren();
   for (const text of [`${width} × ${height}`, formatTime(duration), `${(next.size / 1048576).toFixed(1)} MB`]) {
     const pill = document.createElement("span");
@@ -304,23 +492,24 @@ let seekTimer = null;
 $("seek").oninput = () => {
   $("time").textContent = formatTime(Number($("seek").value));
   clearTimeout(seekTimer);
-  seekTimer = setTimeout(() => seekTo(Number($("seek").value)), 80);
+  seekTimer = setTimeout(() => { if (!scanning) seekTo(Number($("seek").value)); }, 80);
 };
-$("prev").onclick = () => seekTo(currentTime - 0.1);
-$("next").onclick = () => seekTo(currentTime + 0.1);
+$("prev").onclick = () => { if (!scanning) seekTo(currentTime - 0.1); };
+$("next").onclick = () => { if (!scanning) seekTo(currentTime + 0.1); };
 $("markIn").onclick = () => { rangeIn = currentTime; if (rangeOut != null && rangeOut <= rangeIn) rangeOut = Math.min(duration, rangeIn + 0.2); updateRange(); };
 $("markOut").onclick = () => { rangeOut = Math.max(currentTime, rangeIn + 0.1); updateRange(); };
 $("clearRange").onclick = () => { rangeIn = 0; rangeOut = null; updateRange(); };
 
 function paintedFrame() {
-  const { mask, count } = rasterMask();
-  if (!count) throw new Error("Pinte ou selecione a área que deve ser removida.");
+  const mask = combinedMaskAt(currentTime, width, height);
+  let count = 0;
+  for (const v of mask) if (v) count++;
+  if (!count) throw new Error("Pinte ou selecione a área, ou execute a detecção automática.");
   const snapshot = frameCtx.getImageData(0, 0, width, height);
   const copy = new Uint8ClampedArray(snapshot.data);
   const expanded = dilateMask(mask, width, height, Number($("expand").value));
   inpaintRGBA(copy, width, height, expanded, 0);
-  const image = new ImageData(copy, width, height);
-  return image;
+  return new ImageData(copy, width, height);
 }
 
 function showCompare(image) {
@@ -417,7 +606,106 @@ async function readText() {
   }
 }
 
+function showAutoTraces() {
+  const list = $("autoList");
+  list.replaceChildren();
+  if (!autoTraces.length) {
+    list.textContent = "Nenhum texto recorrente detectado ainda.";
+    return;
+  }
+  for (const trace of autoTraces) {
+    const row = document.createElement("div");
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.gap = "8px";
+    const badge = document.createElement("span");
+    badge.className = "pill";
+    badge.textContent = trace.recurring ? "repetido" : "intermitente";
+    const label = document.createElement("span");
+    label.className = "help";
+    label.textContent = `“${trace.text}” · ${trace.w}×${trace.h}px`;
+    const go = document.createElement("button");
+    go.className = "button ghost";
+    go.type = "button";
+    go.textContent = "Ver";
+    go.onclick = () => { if (trace.times.length) seekTo(trace.times[0]); };
+    row.append(badge, label, go);
+    list.appendChild(row);
+  }
+}
+
+async function autoRemove() {
+  if (scanning || !file) return;
+  if (!ocrWorker) {
+    try {
+      setStatus("Preparando o leitor de texto…", 0.01);
+      const { createWorker } = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js");
+      ocrWorker = await createWorker("por+eng", 1, {
+        workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js",
+        corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1/tesseract-core-simd-lstm.wasm.js",
+        langPath: "https://tessdata.projectnaptha.com/4.0.0",
+        workerBlobURL: true,
+      });
+    } catch (error) {
+      setStatus(`OCR indisponível: ${error.message}`, 0, "error");
+      return;
+    }
+  }
+  scanning = true;
+  $("autoScan").disabled = true;
+  $("exportBtn").disabled = true;
+  $("ocr").disabled = true;
+  try {
+    const times = sampleTimes();
+    const raw = [];
+    const ocrCanvas = document.createElement("canvas");
+    const maxSide = 1600;
+    const ocrScale = Math.min(1, maxSide / Math.max(width, height));
+    ocrCanvas.width = Math.round(width * ocrScale);
+    ocrCanvas.height = Math.round(height * ocrScale);
+    const ocrCtx = ocrCanvas.getContext("2d", { willReadFrequently: true });
+    for (let i = 0; i < times.length; i++) {
+      setStatus(`Analisando texto… ${i + 1} de ${times.length}`, (i + 1) / times.length);
+      await seekTo(times[i]);
+      ocrCtx.drawImage(frameCanvas, 0, 0, ocrCanvas.width, ocrCanvas.height);
+      const result = await ocrWorker.recognize(ocrCanvas);
+      const lines = (result.data.lines || []).filter((line) => line.text.trim() && line.confidence >= 35);
+      for (const line of lines) {
+        const box = line.bbox;
+        raw.push({
+          text: line.text.trim(),
+          x: Math.round(box.x0 / ocrScale),
+          y: Math.round(box.y0 / ocrScale),
+          w: Math.round((box.x1 - box.x0) / ocrScale),
+          h: Math.round((box.y1 - box.y0) / ocrScale),
+          time: times[i],
+        });
+      }
+    }
+    const clusters = clusterDetections(raw);
+    autoTraces = finalizeTraces(clusters, times.length);
+    drawAutoOverlay();
+    showAutoTraces();
+    if (!autoTraces.length) {
+      setStatus("Nenhum texto recorrente detectado. Tente o modo \"Todo texto\" ou pinte manualmente.", 0, "error");
+      return;
+    }
+    const recurring = autoTraces.filter((t) => t.recurring).length;
+    setStatus(`${autoTraces.length} área(s) mapeada(s)${recurring ? ` (${recurring} recorrente)` : ""}. Prévia e exportação usam a máscara automática.`, 1, "success");
+    $("compare").style.display = "none";
+  } catch (error) {
+    setStatus(error.message || "Falha na detecção automática.", 0, "error");
+  } finally {
+    scanning = false;
+    $("autoScan").disabled = false;
+    $("exportBtn").disabled = false;
+    $("ocr").disabled = false;
+  }
+}
+
 $("ocr").onclick = readText;
+$("autoScan").onclick = autoRemove;
+$("autoMode").onchange = () => { drawAutoOverlay(); $("compare").style.display = "none"; };
 
 function setStatus(text, progress, kind = "") {
   $("status").style.display = "block";
@@ -429,8 +717,9 @@ function setStatus(text, progress, kind = "") {
 async function exportVideo() {
   if (exporting) return;
   const { mask, count } = rasterMask();
-  if (!count) {
-    setStatus("Pinte a área antes de exportar.", 0, "error");
+  const autoCount = autoTraces.length;
+  if (!count && !autoCount) {
+    setStatus("Pinte a área ou execute a detecção automática antes de exportar.", 0, "error");
     return;
   }
   if (count > width * height * 0.35) {
@@ -470,7 +759,10 @@ async function exportVideo() {
     ? new OffscreenCanvas(width, height)
     : Object.assign(document.createElement("canvas"), { width, height });
   const ctx = work.getContext("2d", { willReadFrequently: true });
-  const prepared = dilateMask(mask, width, height, Number($("expand").value));
+  const manual = rasterMask();
+  const hasManual = manual.count > 0;
+  let manualDilated = null;
+  if (hasManual) manualDilated = dilateMask(manual.mask, width, height, Number($("expand").value));
   let cachedMask = null;
   const options = {
     input,
@@ -486,8 +778,17 @@ async function exportVideo() {
           work.height = dh;
         }
         sample.draw(ctx, 0, 0);
-        if (!cachedMask || cachedMask.w !== dw || cachedMask.h !== dh) {
-          cachedMask = { w: dw, h: dh, mask: scaleMask(prepared, width, height, dw, dh) };
+        const timestamp = sample.timestamp;
+        let frameMask;
+        if (!hasManual && !autoTraces.length) {
+          frameMask = new Uint8Array(dw * dh);
+        } else if (width === dw && height === dh && hasManual && !autoTraces.length) {
+          frameMask = manualDilated;
+        } else {
+          frameMask = combinedMaskAt(timestamp, dw, dh);
+        }
+        if (!cachedMask || cachedMask.w !== dw || cachedMask.h !== dh || frameMask !== cachedMask.mask) {
+          cachedMask = { w: dw, h: dh, mask: frameMask };
         }
         const image = ctx.getImageData(0, 0, dw, dh);
         inpaintRGBA(image.data, dw, dh, cachedMask.mask, 0);
@@ -539,7 +840,7 @@ $("exportBtn").onclick = async () => {
 $("cancelBtn").onclick = () => conversion?.cancel();
 
 window.addEventListener("keydown", (event) => {
-  if (event.target.matches("input, textarea, select") || !file) return;
+  if (scanning || event.target.matches("input, textarea, select") || !file) return;
   const key = event.key.toLowerCase();
   if (key === "arrowleft") { event.preventDefault(); seekTo(currentTime - (event.shiftKey ? 1 : 0.1)); }
   else if (key === "arrowright") { event.preventDefault(); seekTo(currentTime + (event.shiftKey ? 1 : 0.1)); }

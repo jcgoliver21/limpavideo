@@ -63,6 +63,7 @@
         <p class="muted">Atalhos: <span class="kbd">B</span> pincel, <span class="kbd">E</span> borracha, <span class="kbd">R</span> retângulo, <span class="kbd">←</span><span class="kbd">→</span> quadro, <span class="kbd">Ctrl+Z</span> desfazer. Para letras grandes, teste raio de 8–15 px.</p>
         <div class="controls"><button id="markIn" class="button ghost" type="button">Marcar início</button><button id="markOut" class="button ghost" type="button">Marcar fim</button><button id="clearRange" class="button ghost" type="button">Vídeo inteiro</button><span id="rangeLabel" class="help">Trecho: vídeo inteiro</span></div>
         <div class="actionRow"><button id="saveMask" class="button" type="button">Salvar máscara deste quadro</button><button id="previewButton" class="button secondary" type="button">Prévia deste quadro</button><span id="maskStatus" class="help"></span></div>
+        <div class="controls"><button id="autoMasks" class="button" type="button" disabled>Remover textos repetidos automaticamente</button><span class="help">Cria máscaras a partir do OCR e processa no modo “texto igual”.</span></div>
       </div>
       <aside class="sidePanel">
         <h4>Máscaras salvas <span id="maskCount" class="pill">0</span></h4>
@@ -389,9 +390,23 @@ async function pollScan(){
       $('scanStatusText').textContent='Análise concluída.';$('scanStatusText').className='success';
       $('scanSummary').textContent=`${data.detected} quadro(s) com texto reconhecido em ${data.total} amostras (intervalo ${data.interval}s). Clique em um texto para editá-lo.`;
       $('scanDownload').href=`/api/${jobId}/scan/download`;$('scanDownload').style.display='inline-flex';showScanResults(data.frames);
+      $('autoMasks').disabled=false;
     }$('scanButton').disabled=false;
   }catch(e){displayError($('scanStatusText'),e.message);$('scanButton').disabled=false}
 }
+
+$('autoMasks').onclick=async()=>{
+  if(!jobId)return;
+  const button=$('autoMasks');button.disabled=true;$('maskStatus').textContent='Criando máscaras automáticas…';$('maskStatus').className='help';
+  try{
+    const form=new FormData();form.append('padding',$('padding').value);
+    const data=await parseResponse(await fetch(`/api/${jobId}/auto`,{method:'POST',body:form}));
+    $('maskStatus').textContent=`${data.created} máscara(s) automática(s) criada(s). Iniciando processamento…`;$('maskStatus').className='success';
+    await refreshMaskList();
+    $('maskMode').value='similar';
+    $('process').click();
+  }catch(e){displayError($('maskStatus'),e.message);button.disabled=false}
+};
 
 async function previewCurrentFrame(){
   const button=$('previewButton');button.disabled=true;$('maskStatus').textContent='Gerando prévia do quadro…';$('maskStatus').className='help';
@@ -435,6 +450,8 @@ async function restoreJobPanels(){
       $('scanSummary').textContent=`${results.detected} quadro(s) com texto reconhecido em ${results.total} amostras (sessão restaurada).`;
       $('scanDownload').href=`/api/${jobId}/scan/download`;$('scanDownload').style.display='inline-flex';showScanResults(results.frames);
     }else if(data.scan_status==='error'){displayError($('scanStatusText'),data.scan_error||'A análise anterior foi interrompida.');$('scanStatus').style.display='block'}
+    $('autoMasks').disabled=data.scan_status!=='done';
+    $('autoMasks').disabled=data.scan_status!=='done';
     if(data.status==='processing'){$('status').style.display='block';$('process').disabled=true;pollProcess()}
     else if(data.status==='done'){
       $('status').style.display='block';$('statusText').textContent='Vídeo finalizado anteriormente.';$('statusText').className='success';

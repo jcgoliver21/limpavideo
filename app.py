@@ -740,6 +740,80 @@ def scan_download(job_id):
                      download_name="quadros_com_texto.zip", mimetype="application/zip")
 
 
+@app.post("/api/<job_id>/auto")
+def auto_masks(job_id):
+    folder = job_path(job_id)
+    with lock:
+        state = jobs.get(job_id)
+        if not state:
+            abort(404, description="Sessão de vídeo não encontrada; envie o MP4 novamente.")
+        if state.get("scan_status") != "done":
+            return jsonify(error="Analise o vídeo primeiro para usar a remoção automática."), 400
+        if state.get("status") == "processing":
+            return jsonify(error="Aguarde o processamento atual terminar."), 409
+    try:
+        pad = int(request.form.get("padding", "8"))
+        pad = min(max(pad, 0), 40)
+    except ValueError:
+        return jsonify(error="Margem inválida."), 400
+
+    info = state["info"]
+    width, height = info["width"], info["height"]
+    occurrences: dict[str, list[dict]] = {}
+    for result in state.get("scan_results", []):
+        for line in result.get("lines", []):
+            if "Texto recorrente" in line.get("classification", ""):
+                normalized = normalize_text(line["text"])
+                if normalized:
+                    occurrences.setdefault(normalized, []).append({
+                        "frame": int(result.get("frame", 0)),
+                        "text": line["text"],
+                        "box": line["box"],
+                        "confidence": line.get("confidence", 0),
+                    })
+    if not occurrences:
+        return jsonify(error="Nenhum texto recorrente foi detectado. Tente reduzir o intervalo de amostragem ou pintar a máscara manualmente."), 400
+
+    created = 0
+    for normalized, found in occurrences.items():
+        if not found:
+            continue
+        best = max(found, key=lambda item: item["confidence"])
+        frame_index = best["frame"]
+        x, y, bw, bh = best["box"]
+        x = max(0, x - pad)
+        y = max(0, y - pad)
+        bw = min(width - x, bw + pad * 2)
+        bh = min(height - y, bh + pad * 2)
+        if bw <= 0 or bh <= 0:
+            continue
+        mask = np.zeros((height, width), dtype=np.uint8)
+        mask[y:y + bh, x:x + bw] = 255
+        mask_path = folder / "masks" / f"mask_{frame_index:09d}.png"
+        mask_path.parent.mkdir(parents=True, exist_ok=True)
+        ok, encoded = cv2.imencode(".png", mask)
+        if not ok:
+            continue
+        mask_path.write_bytes(encoded.tobytes())
+        entry = {
+            "frame": frame_index,
+            "time": round(frame_index / info["fps"], 4),
+            "file": mask_path.name,
+            "pixels": int(cv2.countNonZero(mask)),
+            "target_text": best["text"][:160],
+            "bbox": [x, y, bw, bh],
+        }
+        entries = [item for item in read_mask_manifest(folder)
+                   if int(item.get("frame", -1)) != frame_index]
+        entries.append(entry)
+        entries.sort(key=lambda item: item["frame"])
+        write_mask_manifest(folder, entries)
+        created += 1
+    if not created:
+        return jsonify(error="Não foi possível criar nenhuma máscara automática."), 400
+    return jsonify(created=created)
+
+
 @app.post("/api/<job_id>/process")
 def process(job_id):
     folder = job_path(job_id)

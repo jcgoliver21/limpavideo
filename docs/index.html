@@ -19,7 +19,7 @@
     .row,.controls,.actionRow,.pills{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.pills{margin-top:12px}.pill{background:#252936;border:1px solid #353a4a;padding:5px 9px;border-radius:999px;font-size:12px;color:#d2d5e1}
     #editor{display:none}.viewer{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start;margin-top:16px}
     .previewBox{display:flex;justify-content:center;background:#0b0d12;border:1px solid #272c38;border-radius:12px;overflow:hidden;min-height:190px;padding:10px}
-    .stage{position:relative;width:min(100%,960px);touch-action:none;background:#07080b}.stage canvas{display:block;width:100%;height:100%}.stage #paint{position:absolute;inset:0;cursor:crosshair}
+    .stage{position:relative;width:min(100%,960px);touch-action:none;background:#07080b}.stage canvas{display:block;width:100%;height:100%}.stage #paint,.stage #autoLayer{position:absolute;inset:0}.stage #paint{cursor:crosshair}.stage #autoLayer{pointer-events:none}
     .side{background:#141720;border:1px solid var(--line);border-radius:12px;padding:13px}.side h4{margin:0 0 8px;font-size:14px}
     .timeline{display:flex;align-items:center;gap:9px;margin:12px 0}.timeline input{flex:1;accent-color:var(--accent)}.time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;min-width:92px;text-align:right}
     .controls{margin:10px 0}.controls input[type=range]{width:120px;accent-color:var(--accent)}.controls label{font-size:12px;color:#d8dbe5}
@@ -36,7 +36,7 @@
   <header class="brand"><div class="mark">Lv</div><div><h1>LimpaVídeo</h1><small>O vídeo não sai deste navegador</small></div></header>
   <section class="hero">
     <h2>Apague texto e marcas sem instalar nada</h2>
-    <p>Pinte a área, confira a prévia e exporte um MP4 novo. O original não é alterado. Para vídeos longos ou reconstrução quadro a quadro com OpenCV, use o <a href="https://github.com/jcgoliver21/limpavideo">app local no GitHub</a>.</p>
+    <p>Pinte manualmente ou deixe o OCR detectar textos repetidos e remover sozinho. Confira a prévia e exporte um MP4 novo. O original não é alterado. Para vídeos longos e reconstrução com OpenCV, use o <a href="https://github.com/jcgoliver21/limpavideo">app local no GitHub</a>.</p>
   </section>
   <div class="notice"><strong>Use só conteúdo próprio ou autorizado.</strong> Remover marca, crédito ou legenda de material de terceiros pode violar direitos autorais. O preenchimento cobre a área com a cor ao redor; não recupera detalhe fino que estava escondido.</div>
   <p id="boot" class="help">Carregando a página…</p>
@@ -54,7 +54,7 @@
     <div class="pills" id="pills"></div>
     <div class="viewer">
       <div>
-        <div class="previewBox"><div id="stage" class="stage"><canvas id="frame"></canvas><canvas id="paint"></canvas></div></div>
+        <div class="previewBox"><div id="stage" class="stage"><canvas id="frame"></canvas><canvas id="autoLayer"></canvas><canvas id="paint"></canvas></div></div>
         <div class="timeline">
           <button id="prev" class="button secondary" type="button">−0,1 s</button>
           <input id="seek" type="range" min="0" max="1" step="0.01" value="0">
@@ -76,6 +76,17 @@
         </div>
         <p class="muted">Atalhos: <span class="kbd">B</span> <span class="kbd">E</span> <span class="kbd">R</span> <span class="kbd">←</span> <span class="kbd">→</span> <span class="kbd">Ctrl+Z</span>. Se sobrar contorno, aumente Expandir.</p>
         <div id="ocrList" class="ocrList"></div>
+        <hr style="border-color:var(--line);margin:14px 0">
+        <h4>Remoção automática <span class="help">(experimental)</span></h4>
+        <p class="muted">O OCR amostra o vídeo e remove textos repetidos na mesma posição, como marca d'água ou créditos. Pode falhar em texto estilizado, pequeno ou de baixo contraste.</p>
+        <div class="controls">
+          <select id="autoMode">
+            <option value="recurring" selected>Textos repetidos no mesmo lugar</option>
+            <option value="all">Todo texto detectado</option>
+          </select>
+          <button id="autoScan" class="button" type="button">Detectar e aplicar</button>
+        </div>
+        <div id="autoList" class="ocrList"></div>
         <div class="actionRow">
           <button id="preview" class="button secondary" type="button">Prévia deste quadro</button>
           <button id="saveFrame" class="button ghost" type="button">Baixar quadro</button>
