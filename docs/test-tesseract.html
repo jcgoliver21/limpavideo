@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>Teste Tesseract</title></head>
+<body>
+<pre id="out">carregando script...</pre>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" crossorigin="anonymous"></script>
+<script type="module">
+const out = document.getElementById("out");
+try {
+  out.textContent = "Tesseract global: " + (typeof window.Tesseract) + "\ncreateWorker: " + (typeof (window.Tesseract && window.Tesseract.createWorker));
+  if (!window.Tesseract || typeof window.Tesseract.createWorker !== "function") {
+    out.textContent += "\nFALHA: createWorker não disponível";
+    return;
+  }
+  out.textContent += "\nCriando worker (pode demorar)...";
+  const worker = await window.Tesseract.createWorker("eng", 1, {
+    workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js",
+    corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1/tesseract-core-simd-lstm.wasm.js",
+    langPath: "https://tessdata.projectnaptha.com/4.0.0",
+    workerBlobURL: true,
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = 200; canvas.height = 50;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "white"; ctx.fillRect(0,0,200,50);
+  ctx.fillStyle = "black"; ctx.font = "30px sans-serif"; ctx.fillText("hello", 20, 35);
+  const result = await worker.recognize(canvas);
+  out.textContent += "\nOCR ok: " + (result.data.text || "(vazio)");
+  await worker.terminate();
+} catch (e) {
+  out.textContent += "\nERRO: " + e.message + "\n" + (e.stack || "");
+}
+</script>
+</body>
+</html>
