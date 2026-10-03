@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#11131a">
+  <meta name="description" content="Remova texto e marcas de um vídeo no navegador. O arquivo não sai do seu computador.">
+  <title>LimpaVídeo — editor de vídeo no navegador</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2329243c'/%3E%3Cpath d='M18 34l8 8 20-22' fill='none' stroke='%23c6baff' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>
+    :root{color-scheme:dark;--bg:#101219;--panel:#191d27;--panel2:#141720;--muted:#a4a9bb;--text:#f4f5f9;--accent:#a192ff;--accent2:#c1b7ff;--line:#303544;--green:#83dfbb;--red:#ffb9b9;--gold:#ffe095}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#292541 0,transparent 48%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}button,input,select{font:inherit}
+    main{max-width:1180px;margin:0 auto;padding:28px 22px 64px}.brand{display:flex;align-items:center;gap:12px}.mark{width:42px;height:42px;border-radius:13px;background:#29243c;color:#c6baff;display:grid;place-items:center;font-weight:750}.brand h1{font-size:22px;margin:0}.brand small{color:var(--muted)}
+    .hero{margin:24px 0 8px}.hero h2{font-size:clamp(26px,4vw,36px);line-height:1.12;margin:0 0 8px;letter-spacing:-.6px}.hero p{color:var(--muted);max-width:760px;margin:0}
+    .notice{margin:16px 0;border:1px solid #403b5c;background:#201e2d;border-radius:12px;padding:12px 14px;color:#ded9f6;font-size:13px}
+    .card{background:rgba(26,29,39,.97);border:1px solid var(--line);border-radius:16px;padding:20px;margin:16px 0}.step{display:flex;gap:12px;align-items:flex-start}.num{flex:none;width:29px;height:29px;display:grid;place-items:center;background:#302b48;color:#c8bfff;border-radius:50%;font-weight:700}.step h3{margin:1px 0 4px;font-size:17px}.help,.muted{margin:0;color:var(--muted);font-size:13px}
+    .dropzone{margin-top:14px;border:1px dashed #4d4867;border-radius:14px;padding:22px;text-align:center;background:#141720}body.dropping .dropzone{border-color:var(--accent);background:#221f33}
+    .fileLabel,.button{border:0;border-radius:9px;background:var(--accent);color:#151321;padding:10px 14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;text-decoration:none}.fileLabel input{display:none}.button.secondary{background:#303544;color:#f3f4f8;border:1px solid #42485a}.button.ghost{background:transparent;color:#d8d4ff;border:1px solid #4d4867}.button.danger{background:#472d37;color:#ffdce2;border:1px solid #74434e}.button.active{background:var(--accent);color:#151321}.button:disabled{opacity:.45;cursor:not-allowed}
+    .row,.controls,.actionRow,.pills{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.pills{margin-top:12px}.pill{background:#252936;border:1px solid #353a4a;padding:5px 9px;border-radius:999px;font-size:12px;color:#d2d5e1}
+    #editor{display:none}.viewer{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start;margin-top:16px}
+    .previewBox{display:flex;justify-content:center;background:#0b0d12;border:1px solid #272c38;border-radius:12px;overflow:hidden;min-height:190px;padding:10px}
+    .stage{position:relative;width:min(100%,960px);touch-action:none;background:#07080b}.stage canvas{display:block;width:100%;height:100%}.stage #paint{position:absolute;inset:0;cursor:crosshair}
+    .side{background:#141720;border:1px solid var(--line);border-radius:12px;padding:13px}.side h4{margin:0 0 8px;font-size:14px}
+    .timeline{display:flex;align-items:center;gap:9px;margin:12px 0}.timeline input{flex:1;accent-color:var(--accent)}.time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;min-width:92px;text-align:right}
+    .controls{margin:10px 0}.controls input[type=range]{width:120px;accent-color:var(--accent)}.controls label{font-size:12px;color:#d8dbe5}
+    select{background:#222633;color:var(--text);border:1px solid #42485a;border-radius:8px;padding:8px 10px}
+    .status{margin-top:14px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:#141720;display:none}.progress{height:7px;border-radius:8px;background:#303442;margin-top:8px;overflow:hidden}.progress>span{display:block;height:100%;width:0;background:var(--accent)}
+    .error{color:var(--red)}.success{color:var(--green)}.compare{display:none;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.compare figure{margin:0;background:#11141b;border:1px solid var(--line);padding:8px;border-radius:10px}.compare figcaption{font-size:12px;color:var(--muted);margin-bottom:6px}.compare canvas{width:100%;max-height:320px;object-fit:contain;background:#080a0e}
+    .ocrList{display:flex;flex-direction:column;gap:8px;margin-top:10px}.kbd{font:11px ui-monospace,Consolas,monospace;border:1px solid #42485a;border-radius:5px;padding:0 5px;color:#c9cde0}
+    footer{margin-top:22px;color:#858b9d;font-size:12px;text-align:center}a{color:var(--accent2)}
+    @media(max-width:800px){main{padding:20px 14px}.viewer,.compare{grid-template-columns:1fr}.card{padding:15px}}
+  </style>
+</head>
+<body>
+<main>
+  <header class="brand"><div class="mark">Lv</div><div><h1>LimpaVídeo</h1><small>O vídeo não sai deste navegador</small></div></header>
+  <section class="hero">
+    <h2>Apague texto e marcas sem instalar nada</h2>
+    <p>Pinte a área, confira a prévia e exporte um MP4 novo. O original não é alterado. Para vídeos longos ou reconstrução quadro a quadro com OpenCV, use o <a href="https://github.com/jcgoliver21/limpavideo">app local no GitHub</a>.</p>
+  </section>
+  <div class="notice"><strong>Use só conteúdo próprio ou autorizado.</strong> Remover marca, crédito ou legenda de material de terceiros pode violar direitos autorais. O preenchimento cobre a área com a cor ao redor; não recupera detalhe fino que estava escondido.</div>
+  <p id="boot" class="help">Carregando a página…</p>
+
+  <section class="card">
+    <div class="step"><span class="num">1</span><div><h3>Escolha o vídeo</h3><p class="help">MP4, MOV ou WebM, até 500 MB. Nada é enviado a um servidor.</p></div></div>
+    <div class="dropzone" id="dropzone">
+      <label class="fileLabel">Selecionar vídeo<input id="file" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm"></label>
+      <p class="help" id="fileMeta" style="margin-top:10px">Ou arraste o arquivo para cá.</p>
+    </div>
+  </section>
+
+  <section id="editor" class="card">
+    <div class="step"><span class="num">2</span><div><h3>Marque o que deve sumir</h3><p class="help">A mesma máscara vale para o trecho exportado. Serve para marca fixa, crédito ou texto parado.</p></div></div>
+    <div class="pills" id="pills"></div>
+    <div class="viewer">
+      <div>
+        <div class="previewBox"><div id="stage" class="stage"><canvas id="frame"></canvas><canvas id="paint"></canvas></div></div>
+        <div class="timeline">
+          <button id="prev" class="button secondary" type="button">−0,1 s</button>
+          <input id="seek" type="range" min="0" max="1" step="0.01" value="0">
+          <button id="next" class="button secondary" type="button">+0,1 s</button>
+          <span id="time" class="time">00:00.000</span>
+        </div>
+        <div class="controls">
+          <button id="brush" class="button secondary active" type="button">Pincel</button>
+          <button id="eraser" class="button secondary" type="button">Borracha</button>
+          <button id="rectTool" class="button secondary" type="button">Retângulo</button>
+          <label for="size">Tamanho</label><input id="size" type="range" min="2" max="80" value="18">
+          <button id="undo" class="button secondary" type="button" disabled>Desfazer</button>
+          <button id="redo" class="button secondary" type="button" disabled>Refazer</button>
+          <button id="clearMask" class="button ghost" type="button">Limpar</button>
+        </div>
+        <div class="controls">
+          <label for="expand">Expandir</label><input id="expand" type="range" min="0" max="16" value="4"><span id="expandValue" class="help">4 px</span>
+          <button id="ocr" class="button ghost" type="button">Ler texto deste quadro</button>
+        </div>
+        <p class="muted">Atalhos: <span class="kbd">B</span> <span class="kbd">E</span> <span class="kbd">R</span> <span class="kbd">←</span> <span class="kbd">→</span> <span class="kbd">Ctrl+Z</span>. Se sobrar contorno, aumente Expandir.</p>
+        <div id="ocrList" class="ocrList"></div>
+        <div class="actionRow">
+          <button id="preview" class="button secondary" type="button">Prévia deste quadro</button>
+          <button id="saveFrame" class="button ghost" type="button">Baixar quadro</button>
+          <span id="hint" class="help"></span>
+        </div>
+      </div>
+      <aside class="side">
+        <h4>Trecho</h4>
+        <p class="muted">Por padrão o vídeo inteiro é exportado. Marque início e fim se quiser só um pedaço.</p>
+        <div class="controls">
+          <button id="markIn" class="button ghost" type="button">Início</button>
+          <button id="markOut" class="button ghost" type="button">Fim</button>
+          <button id="clearRange" class="button ghost" type="button">Inteiro</button>
+        </div>
+        <p id="rangeLabel" class="help">Trecho: vídeo inteiro</p>
+        <hr style="border-color:var(--line);margin:14px 0">
+        <h4>Exportar</h4>
+        <p class="muted">Chrome ou Edge geram o MP4 com áudio. A máscara pintada é aplicada em todos os quadros do trecho.</p>
+        <button id="exportBtn" class="button" type="button" style="margin-top:10px;width:100%">Exportar MP4</button>
+        <button id="cancelBtn" class="button danger" type="button" style="display:none;margin-top:8px;width:100%">Cancelar</button>
+      </aside>
+    </div>
+    <div id="compare" class="compare">
+      <figure><figcaption>Original</figcaption><canvas id="before"></canvas></figure>
+      <figure><figcaption>Prévia</figcaption><canvas id="after"></canvas></figure>
+    </div>
+    <div id="status" class="status"><div id="statusText"></div><div class="progress"><span id="bar"></span></div><div id="download" style="margin-top:10px"></div></div>
+  </section>
+  <footer>LimpaVídeo · processamento local no navegador · <a href="https://github.com/jcgoliver21/limpavideo">código no GitHub</a></footer>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

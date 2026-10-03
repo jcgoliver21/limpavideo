@@ -1,0 +1,4 @@
+Flask>=3.0,<4
+numpy>=1.26,<3
+opencv-python-headless>=4.9,<5
+pytesseract>=0.3.13,<0.4

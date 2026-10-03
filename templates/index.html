@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#11131a">
+  <title>LimpaVídeo Studio — editor de quadros</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101219;--panel:#191d27;--panel2:#141720;--muted:#a4a9bb;--text:#f4f5f9;--accent:#a192ff;--accent2:#c1b7ff;--line:#303544;--green:#83dfbb;--red:#ffb9b9;--gold:#ffe095}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#292541 0,transparent 48%),var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}button,input,select{font:inherit}
+    main{max-width:1180px;margin:0 auto;padding:30px 22px 56px}.brand{display:flex;align-items:center;gap:12px}.mark{width:42px;height:42px;border-radius:13px;background:#29243c;color:#c6baff;display:grid;place-items:center;font-size:21px}.brand h1{font-size:22px;margin:0}.brand small{color:var(--muted)}
+    .hero{margin:25px 0 18px}.hero h2{font-size:30px;line-height:1.15;margin:0 0 9px;letter-spacing:-.6px}.hero p{color:var(--muted);max-width:800px;margin:0}.notice{margin:16px 0 22px;border:1px solid #403b5c;background:#201e2d;border-radius:12px;padding:11px 14px;color:#ded9f6;font-size:12px}
+    .card{background:rgba(26,29,39,.97);border:1px solid var(--line);border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 12px 36px #0002}.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:15px}.num{flex:none;width:29px;height:29px;display:grid;place-items:center;background:#302b48;color:#c8bfff;border-radius:50%;font-weight:700}.step h3{margin:1px 0 4px;font-size:17px}.help{margin:0;color:var(--muted);font-size:12px}.fileRow,.row,.controls,.actionRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.fileRow{margin-top:14px}.fileLabel,.button{border:0;border-radius:9px;background:var(--accent);color:#151321;padding:10px 14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px}.fileLabel input{display:none}.button.secondary{background:#303544;color:#f3f4f8;border:1px solid #42485a}.button.ghost{background:transparent;color:#d8d4ff;border:1px solid #4d4867}.button.danger{background:#472d37;color:#ffdce2;border:1px solid #74434e}.button.active{background:var(--accent);color:#151321;border-color:transparent}.button:disabled{opacity:.45;cursor:not-allowed}body.drop main{outline:2px dashed var(--accent);outline-offset:-8px}.kbd{font:11px ui-monospace,Consolas,monospace;border:1px solid #42485a;border-radius:5px;padding:0 5px;color:#c9cde0}.fileMeta{color:var(--muted);font-size:12px;overflow-wrap:anywhere}.pill{background:#252936;border:1px solid #353a4a;padding:5px 9px;border-radius:999px;font-size:11px;color:#d2d5e1}
+    #scanSection,#editor{display:none}.videoInfo{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.scanControls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}.scanControls label,.controls label{font-size:12px;color:#d8dbe5}.scanControls select,.controls select{background:#222633;color:var(--text);border:1px solid #42485a;border-radius:8px;padding:8px 10px}.scanGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:12px;margin-top:15px}.scanCard{background:var(--panel2);border:1px solid var(--line);border-radius:11px;overflow:hidden}.scanCard img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#080a0e}.scanCard .meta{padding:10px}.scanCard strong{font-size:12px}.scanCard p{font-size:12px;color:#d1d5e0;margin:7px 0 0;overflow-wrap:anywhere}.badge{display:inline-block;font-size:10px;color:#e5dfff;background:#332d4d;padding:3px 7px;border-radius:99px;margin-top:6px}.smallButton{padding:6px 9px;font-size:11px;margin-top:7px}
+    .videoInfo{margin-bottom:12px}.viewerGrid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}.previewBox{display:flex;justify-content:center;background:#0b0d12;border:1px solid #272c38;border-radius:12px;overflow:hidden;min-height:190px;align-items:center;padding:10px}.stage{position:relative;overflow:hidden;max-width:100%;touch-action:none;cursor:crosshair;background:#07080b}.stage img{display:block;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}.stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}.sidePanel{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px}.sidePanel h4{margin:0 0 8px;font-size:13px}.sidePanel .muted{font-size:11px;color:var(--muted)}
+    .timeline{display:flex;align-items:center;gap:9px;margin:12px 0}.timeline input{flex:1;accent-color:var(--accent)}.time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:11px;min-width:125px;text-align:right}.controls{gap:8px;margin:11px 0}.controls input[type=range]{width:120px;accent-color:var(--accent)}.controls label{font-size:11px}.sep{height:24px;border-left:1px solid var(--line);margin:0 2px}.actionRow{margin-top:13px}.fine{color:var(--muted);font-size:11px;max-width:760px}.status{margin-top:14px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;color:#d9dced;background:#141720;display:none}.progress{height:6px;border-radius:8px;background:#303442;margin-top:8px;overflow:hidden}.progress>span{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}.error{color:var(--red)}.success{color:var(--green)}
+    .maskList{display:flex;flex-direction:column;gap:7px;margin-top:9px;max-height:250px;overflow:auto}.maskItem{display:flex;align-items:center;gap:6px;background:#202431;border:1px solid #343949;border-radius:8px;padding:7px}.maskItem .maskInfo{flex:1;min-width:0;font-size:11px;overflow-wrap:anywhere;color:#d7d9e4}.maskItem button{padding:5px 7px;font-size:10px}.targetInfo{color:var(--gold);font-size:12px;margin:9px 0}.previewCompare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.previewCompare figure{margin:0;background:#11141b;border:1px solid var(--line);padding:8px;border-radius:10px}.previewCompare figcaption{font-size:11px;color:var(--muted);margin-bottom:6px}.previewCompare img{display:block;width:100%;max-height:340px;object-fit:contain;background:#080a0e}.empty{font-size:12px;color:var(--muted);padding:8px 0}.spacer{flex:1}footer{margin-top:22px;color:#858b9d;font-size:11px;text-align:center}a{color:var(--accent2)}
+    @media(max-width:800px){main{padding:22px 13px}.hero h2{font-size:25px}.viewerGrid{grid-template-columns:1fr}.sidePanel{order:2}.previewCompare{grid-template-columns:1fr}.card{padding:15px}.time{min-width:105px}}
+  </style>
+</head>
+<body>
+<main>
+  <header class="brand"><div class="mark">✦</div><div><h1>LimpaVídeo Studio</h1><small>Editor quadro a quadro com OCR</small></div></header>
+  <section class="hero"><h2>Encontre, edite e exporte</h2><p>Analise o vídeo, abra cada quadro detectado, ajuste a máscara e exporte o MP4 completo com as edições aplicadas no tempo.</p></section>
+  <div class="notice"><strong>Privacidade:</strong> nesta versão local o vídeo fica neste computador. Use apenas conteúdo próprio ou autorizado. A reconstrução pode deixar artefatos, e OCR não detecta logotipos sem texto de forma confiável. A versão no navegador, sem instalar nada, está em <a href="https://jcgoliver21.github.io/limpavideo/">jcgoliver21.github.io/limpavideo</a>.</div>
+  <div id="health" class="notice" style="display:none"></div>
+
+  <section class="card">
+    <div class="step"><span class="num">1</span><div><h3>Escolha um vídeo MP4</h3><p class="help">O original fica intacto. Limite de upload: 700 MB.</p></div></div>
+    <div class="fileRow"><label class="fileLabel">Selecionar MP4<input id="file" type="file" accept="video/mp4,.mp4"></label><span class="fileMeta" id="fileMeta">Nenhum arquivo selecionado. Também dá para arrastar o MP4 para esta página.</span></div>
+  </section>
+
+  <section id="scanSection" class="card">
+    <div class="step"><span class="num">2</span><div><h3>Localize os textos e quadros</h3><p class="help">O OCR analisa português e inglês. Texto repetido em posição semelhante pode ser uma marca d’água. Use intervalo menor para textos rápidos.</p></div></div>
+    <div id="videoInfo" class="videoInfo"></div>
+    <div class="scanControls"><label for="scanInterval">Amostragem</label><select id="scanInterval"><option value="0.1">0,1 s · detalhada</option><option value="0.25">0,25 s</option><option value="0.5" selected>0,5 s</option><option value="1">1 s</option><option value="2">2 s · rápida</option><option value="5">5 s</option></select><button id="scanButton" class="button" type="button">Analisar e separar quadros</button><a id="scanDownload" class="button secondary" style="display:none" href="#">Baixar relatório OCR</a><span id="sampleEstimate" class="help"></span></div>
+    <p class="fine" style="margin-top:9px">Até 3.000 amostras por análise. Os resultados aparecem em lotes de 200; o ZIP contém todos os quadros detectados e o CSV.</p>
+    <div id="scanStatus" class="status"><div id="scanStatusText"></div><div class="progress"><span id="scanProgressBar"></span></div></div>
+    <div id="scanSummary" class="help" style="margin-top:12px"></div><div id="scanResults" class="scanGrid"></div>
+    <button id="moreResults" class="button secondary" type="button" style="display:none;margin-top:12px">Carregar mais quadros</button>
+  </section>
+
+  <section id="editor" class="card">
+    <div class="step"><span class="num">3</span><div><h3>Edite máscaras nos quadros</h3><p class="help">Clique em “Editar texto” em um resultado OCR para abrir o quadro exato e criar uma máscara inicial. Pinte ou apague para ajustar; salve o quadro antes de exportar.</p></div></div>
+    <div class="viewerGrid">
+      <div>
+        <div class="previewBox"><div id="stage" class="stage"><img id="frame" alt="Quadro original do vídeo"><canvas id="paint"></canvas></div></div>
+        <div class="timeline"><button id="prevFrame" class="button secondary" type="button" aria-label="Quadro anterior">−1 quadro</button><input id="seek" type="range" min="0" max="1" step="0.01" value="0"><button id="nextFrame" class="button secondary" type="button" aria-label="Próximo quadro">+1 quadro</button><span id="time" class="time">00:00:00.000 · quadro 0</span></div>
+        <div class="controls">
+          <button id="brush" class="button secondary active" type="button">Pincel</button><button id="eraser" class="button secondary" type="button">Borracha</button><button id="rectTool" class="button secondary" type="button">Retângulo</button>
+          <label for="size">Pincel</label><input id="size" type="range" min="2" max="70" value="12"><span id="sizeValue" class="help"></span>
+          <span class="sep"></span><button id="undo" class="button secondary" type="button" disabled>Desfazer</button><button id="redo" class="button secondary" type="button" disabled>Refazer</button><button id="clearFrame" class="button ghost" type="button">Limpar quadro</button>
+        </div>
+        <div class="controls">
+          <button id="autoMask" class="button ghost" type="button" disabled>Mascarar texto selecionado</button><label for="padding">Margem OCR</label><input id="padding" type="range" min="0" max="40" value="6"><span id="paddingValue" class="help">6 px</span>
+          <span id="targetInfo" class="targetInfo">Nenhum texto selecionado</span>
+        </div>
+        <div class="controls">
+          <label for="method">Reconstrução</label><select id="method"><option value="temporal">Temporal + Telea (experimental)</option><option value="telea">Telea</option><option value="ns">Navier–Stokes</option></select>
+          <label for="radius">Raio</label><input id="radius" type="range" min="1" max="25" value="8"><span id="radiusValue" class="help">8 px</span>
+          <label for="maskExpand">Expandir máscara</label><input id="maskExpand" type="range" min="0" max="20" value="4"><span id="maskExpandValue" class="help">4 px</span>
+        </div>
+        <p class="muted">Atalhos: <span class="kbd">B</span> pincel, <span class="kbd">E</span> borracha, <span class="kbd">R</span> retângulo, <span class="kbd">←</span><span class="kbd">→</span> quadro, <span class="kbd">Ctrl+Z</span> desfazer. Para letras grandes, teste raio de 8–15 px.</p>
+        <div class="controls"><button id="markIn" class="button ghost" type="button">Marcar início</button><button id="markOut" class="button ghost" type="button">Marcar fim</button><button id="clearRange" class="button ghost" type="button">Vídeo inteiro</button><span id="rangeLabel" class="help">Trecho: vídeo inteiro</span></div>
+        <div class="actionRow"><button id="saveMask" class="button" type="button">Salvar máscara deste quadro</button><button id="previewButton" class="button secondary" type="button">Prévia deste quadro</button><span id="maskStatus" class="help"></span></div>
+      </div>
+      <aside class="sidePanel">
+        <h4>Máscaras salvas <span id="maskCount" class="pill">0</span></h4>
+        <p class="muted">Cada máscara fica associada ao número exato do quadro. Ao navegar, uma edição pendente é salva automaticamente.</p>
+        <div id="maskList" class="maskList"><div class="empty">Nenhuma máscara salva ainda.</div></div>
+        <button id="clearAllMasks" class="button danger smallButton" type="button" style="margin-top:10px">Apagar todas as máscaras</button>
+        <hr style="border-color:var(--line);margin:15px 0">
+        <h4>Aplicação no vídeo inteiro</h4>
+        <select id="maskMode" style="width:100%;background:#222633;color:var(--text);border:1px solid #42485a;border-radius:8px;padding:8px">
+          <option value="similar" selected>Propagar para texto OCR igual (recomendado)</option>
+          <option value="keyframes">Usar máscara salva mais próxima no tempo</option>
+          <option value="fixed">Usar máscara atual fixa em todos os quadros</option>
+        </select>
+        <p class="muted" style="margin-top:8px">Propagação só ocorre onde o OCR encontrou o mesmo texto; máscaras são redimensionadas/deslocadas para acompanhar a caixa detectada. Confira o resultado.</p>
+      </aside>
+    </div>
+    <div id="previewCompare" class="previewCompare" style="display:none">
+      <figure><figcaption>Original</figcaption><img id="previewBefore" alt="Quadro original"></figure>
+      <figure><figcaption>Prévia reconstruída</figcaption><img id="previewAfter" alt="Quadro após reconstrução"></figure>
+    </div>
+    <div class="actionRow" style="margin-top:18px"><button id="process" class="button" type="button">Processar e exportar vídeo completo</button><span class="fine">O MP4 final mantém a duração e a faixa de áudio principal. Para uma marca fixa, “máscara atual fixa” é mais adequado; para textos que aparecem em vários pontos, use a propagação OCR.</span></div>
+    <div id="status" class="status"><div id="statusText"></div><div class="progress"><span id="progressBar"></span></div><div id="downloadWrap" style="margin-top:10px"></div></div>
+  </section>
+  <footer>LimpaVídeo Studio · OpenCV + FFmpeg + Tesseract · <a href="https://jcgoliver21.github.io/limpavideo/">versão web</a></footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const fileInput = $('file');
+const canvas = $('paint');
+const ctx = canvas.getContext('2d');
+let jobId = null, info = null, currentFrame = 0, drawMode = 'brush', isDrawing = false;
+let lastPoint = null, activeStroke = null, rectDraft = null, actions = [], redoActions = [], baseMaskData = null;
+let maskDirty = false, currentTarget = null, savedMasks = [], scanFrames = [], scanInterval = 0.5;
+let previewObjectUrl = null, seekTimer = null, frameToken = 0, rangeIn = 0, rangeOut = null;
+
+const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+function formatTime(seconds) {
+  const ms = Math.max(0, Math.round(Number(seconds || 0) * 1000));
+  const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000), s = Math.floor(ms % 60000 / 1000), milli = ms % 1000;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(milli).padStart(3,'0')}`;
+}
+async function apiJSON(response) {
+  const type = (response.headers.get('content-type') || '').toLowerCase();
+  if (!type.includes('application/json')) {
+    const message = response.status === 404
+      ? 'A sessão deste vídeo expirou ou não foi localizada. Envie o MP4 novamente para continuar.'
+      : `O servidor respondeu com uma página inesperada (HTTP ${response.status}). Tente novamente; se persistir, reenvie o vídeo.`;
+    try { await response.text(); } catch (_) {}
+    throw new Error(message);
+  }
+  let data;
+  try { data = await response.json(); }
+  catch (_) { throw new Error('Resposta inválida do servidor. Tente novamente.'); }
+  if (!response.ok) throw new Error(data.error || `Falha HTTP ${response.status}.`);
+  return data;
+}
+function displayError(el, message) { el.textContent = message; el.className = 'error'; }
+function showInfo() {
+  $('videoInfo').replaceChildren();
+  const values = [`${info.width} × ${info.height}`, `${info.fps.toFixed(2)} fps`, formatTime(info.duration)];
+  for (const value of values) { const pill = document.createElement('span'); pill.className='pill'; pill.textContent=value; $('videoInfo').appendChild(pill); }
+}
+function updateFrameLabel() {
+  $('time').textContent = `${formatTime(currentFrame / info.fps)} · quadro ${currentFrame}`;
+}
+function updateOriginalFrame() {
+  if (!jobId || !info) return;
+  $('frame').src = `/api/${jobId}/frame?frame=${currentFrame}&v=${Date.now()}`;
+  updateFrameLabel();
+}
+function updateBrushValue() {
+  const rect = canvas.getBoundingClientRect();
+  const sourcePx = rect.width ? Math.round(Number($('size').value) * canvas.width / rect.width) : Number($('size').value);
+  $('sizeValue').textContent = `${$('size').value}px prévia (~${sourcePx}px vídeo)`;
+}
+function updateHistoryButtons() { $('undo').disabled = !actions.length; $('redo').disabled = !redoActions.length; }
+function drawAction(action) {
+  ctx.save();
+  if (action.type === 'rect') {
+    ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(255,70,95,.60)';
+    ctx.fillRect(action.x, action.y, action.w, action.h);
+  } else {
+    ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=action.width;
+    ctx.globalCompositeOperation = action.mode === 'eraser' ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = action.mode === 'eraser' ? 'rgba(0,0,0,1)' : 'rgba(255,70,95,.60)';
+    ctx.fillStyle = ctx.strokeStyle;
+    if (action.points.length === 1) {
+      ctx.beginPath(); ctx.arc(action.points[0].x, action.points[0].y, action.width/2, 0, Math.PI*2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.moveTo(action.points[0].x, action.points[0].y);
+      for (let i=1;i<action.points.length;i++) ctx.lineTo(action.points[i].x, action.points[i].y);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function redrawCanvas() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if (baseMaskData) ctx.putImageData(baseMaskData,0,0);
+  for (const action of actions) drawAction(action);
+  updateHistoryButtons();
+}
+function addAction(action) {
+  actions.push(action); redoActions=[]; drawAction(action); maskDirty=true; updateHistoryButtons(); $('previewCompare').style.display='none';
+}
+function getPoint(event) {
+  const rect=canvas.getBoundingClientRect();
+  const scaleX = rect.width ? canvas.width / rect.width : 1;
+  const scaleY = rect.height ? canvas.height / rect.height : 1;
+  return {x:clamp((event.clientX-rect.left)*scaleX,0,canvas.width),y:clamp((event.clientY-rect.top)*scaleY,0,canvas.height)};
+}
+function setTool(mode) {
+  drawMode = mode;
+  $('brush').classList.toggle('active', mode === 'brush');
+  $('eraser').classList.toggle('active', mode === 'eraser');
+  $('rectTool').classList.toggle('active', mode === 'rect');
+  canvas.style.cursor = mode === 'rect' ? 'crosshair' : 'crosshair';
+}
+function drawSegment(action, from, to) {
+  ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=action.width;
+  ctx.globalCompositeOperation=action.mode==='eraser'?'destination-out':'source-over';
+  ctx.strokeStyle=action.mode==='eraser'?'rgba(0,0,0,1)':'rgba(255,70,95,.60)';
+  ctx.fillStyle=ctx.strokeStyle;
+  if (!from) { ctx.beginPath();ctx.arc(to.x,to.y,action.width/2,0,Math.PI*2);ctx.fill(); }
+  else { ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke(); }
+  ctx.restore();
+}
+canvas.addEventListener('pointerdown',event=>{
+  if(!jobId||!info)return; isDrawing=true; canvas.setPointerCapture(event.pointerId);
+  const p=getPoint(event), rect=canvas.getBoundingClientRect();
+  if(drawMode==='rect'){rectDraft={x:p.x,y:p.y,w:0,h:0};return}
+  activeStroke={type:'stroke',mode:drawMode,width:Math.max(1,Number($('size').value)*(rect.width?canvas.width/rect.width:1)),points:[p]};
+  lastPoint=p; drawSegment(activeStroke,null,p);
+});
+canvas.addEventListener('pointermove',event=>{
+  if(!isDrawing)return;
+  const p=getPoint(event);
+  if(rectDraft){rectDraft.w=p.x-rectDraft.x;rectDraft.h=p.y-rectDraft.y;redrawCanvas();ctx.save();ctx.fillStyle='rgba(255,70,95,.35)';ctx.strokeStyle='rgba(255,210,120,.9)';ctx.lineWidth=2;const x=Math.min(rectDraft.x,rectDraft.x+rectDraft.w),y=Math.min(rectDraft.y,rectDraft.y+rectDraft.h),w=Math.abs(rectDraft.w),h=Math.abs(rectDraft.h);ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);ctx.restore();return}
+  if(!activeStroke)return; activeStroke.points.push(p); drawSegment(activeStroke,lastPoint,p); lastPoint=p;
+});
+function stopStroke(event){
+  if(!isDrawing)return;isDrawing=false;
+  if(rectDraft){
+    const x=Math.min(rectDraft.x,rectDraft.x+rectDraft.w), y=Math.min(rectDraft.y,rectDraft.y+rectDraft.h);
+    const w=Math.abs(rectDraft.w), h=Math.abs(rectDraft.h);
+    rectDraft=null;
+    if(w>2&&h>2)addAction({type:'rect',x,y,w,h});
+    else redrawCanvas();
+  }else if(activeStroke){actions.push(activeStroke);activeStroke=null;redoActions=[];maskDirty=true;updateHistoryButtons();$('previewCompare').style.display='none'}
+  lastPoint=null;if(event&&canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+}
+canvas.addEventListener('pointerup',stopStroke);canvas.addEventListener('pointercancel',stopStroke);
+$('brush').onclick=()=>setTool('brush');
+$('eraser').onclick=()=>setTool('eraser');
+$('rectTool').onclick=()=>setTool('rect');
+$('undo').onclick=()=>{if(actions.length){redoActions.push(actions.pop());redrawCanvas();maskDirty=true}};
+$('redo').onclick=()=>{if(redoActions.length){actions.push(redoActions.pop());redrawCanvas();maskDirty=true}};
+$('clearFrame').onclick=()=>{baseMaskData=null;actions=[];redoActions=[];redrawCanvas();maskDirty=true;$('previewCompare').style.display='none'};
+$('size').addEventListener('input',updateBrushValue);
+$('radius').addEventListener('input',()=>{$('radiusValue').textContent=`${$('radius').value} px`;$('previewCompare').style.display='none'});
+$('maskExpand').addEventListener('input',()=>{$('maskExpandValue').textContent=`${$('maskExpand').value} px`;$('previewCompare').style.display='none'});
+$('padding').addEventListener('input',()=> $('paddingValue').textContent=`${$('padding').value} px`);
+
+function addOCRMask() {
+  if(!currentTarget||!currentTarget.bbox)return;
+  const [x,y,w,h]=currentTarget.bbox,pad=Number($('padding').value);
+  const x0=clamp(x-pad,0,canvas.width),y0=clamp(y-pad,0,canvas.height);
+  const x1=clamp(x+w+pad,0,canvas.width),y1=clamp(y+h+pad,0,canvas.height);
+  if(x1>x0&&y1>y0)addAction({type:'rect',x:x0,y:y0,w:x1-x0,h:y1-y0});
+}
+$('autoMask').onclick=addOCRMask;
+function setTarget(target) {
+  currentTarget=target&&target.text?{text:target.text,bbox:target.bbox||null}:null;
+  $('targetInfo').textContent=currentTarget?`OCR: “${currentTarget.text}”`:'Nenhum texto selecionado';
+  $('autoMask').disabled=!(currentTarget&&currentTarget.bbox);
+}
+function isCanvasEmpty() {
+  const a=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  for(let i=3;i<a.length;i+=4)if(a[i]>4)return false;
+  return true;
+}
+function createMaskBlob() {
+  const source=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  const tmp=document.createElement('canvas');tmp.width=canvas.width;tmp.height=canvas.height;
+  const tctx=tmp.getContext('2d'),out=tctx.createImageData(tmp.width,tmp.height);
+  for(let i=0;i<source.length;i+=4){const v=source[i+3]>4?255:0;out.data[i]=out.data[i+1]=out.data[i+2]=v;out.data[i+3]=255}
+  tctx.putImageData(out,0,0);return new Promise(resolve=>tmp.toBlob(resolve,'image/png'));
+}
+async function parseResponse(response){return await apiJSON(response)}
+async function loadSavedMask(frameIndex) {
+  const response=await fetch(`/api/${jobId}/masks/${frameIndex}?v=${Date.now()}`);
+  if(response.status===404){baseMaskData=null;actions=[];redoActions=[];redrawCanvas();maskDirty=false;return false}
+  if(!response.ok)throw new Error('Não foi possível carregar a máscara salva.');
+  const bitmap=await createImageBitmap(await response.blob());
+  const temp=document.createElement('canvas');temp.width=canvas.width;temp.height=canvas.height;
+  const tempCtx=temp.getContext('2d');tempCtx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+  const pixels=tempCtx.getImageData(0,0,canvas.width,canvas.height);
+  for(let i=0;i<pixels.data.length;i+=4){const v=Math.max(pixels.data[i],pixels.data[i+1],pixels.data[i+2]);pixels.data[i]=255;pixels.data[i+1]=70;pixels.data[i+2]=95;pixels.data[i+3]=v>0?150:0}
+  baseMaskData=pixels;actions=[];redoActions=[];redrawCanvas();maskDirty=false;return true;
+}
+async function refreshMaskList() {
+  if(!jobId)return;const data=await parseResponse(await fetch(`/api/${jobId}/masks`));savedMasks=data.masks||[];$('maskCount').textContent=String(savedMasks.length);
+  const list=$('maskList');list.replaceChildren();
+  if(!savedMasks.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Nenhuma máscara salva ainda.';list.appendChild(empty);return}
+  for(const entry of savedMasks){
+    const row=document.createElement('div');row.className='maskItem';
+    const infoText=document.createElement('div');infoText.className='maskInfo';infoText.textContent=`${formatTime(entry.time)} · quadro ${entry.frame}${entry.target_text?` · ${entry.target_text}`:''}`;
+    const open=document.createElement('button');open.className='button secondary';open.textContent='Abrir';open.onclick=()=>goToFrame(entry.frame,entry.target_text?{text:entry.target_text,bbox:entry.bbox}:null,false);
+    const del=document.createElement('button');del.className='button danger';del.textContent='×';del.title='Apagar máscara deste quadro';del.onclick=()=>deleteMask(entry.frame);
+    row.append(infoText,open,del);list.appendChild(row);
+  }
+}
+async function saveCurrentMask(quiet=false) {
+  if(!jobId||!info)return false;
+  const blob=await createMaskBlob();const form=new FormData();form.append('frame',String(currentFrame));form.append('mask',blob,'mask.png');
+  form.append('target_text',currentTarget?.text||'');form.append('bbox',JSON.stringify(currentTarget?.bbox||null));
+  const data=await parseResponse(await fetch(`/api/${jobId}/masks`,{method:'POST',body:form}));
+  savedMasks=data.masks||[];maskDirty=false;await refreshMaskList();
+  $('maskStatus').textContent=data.saved?`Máscara salva no quadro ${currentFrame}.`:data.removed?'Máscara removida deste quadro.':'Quadro sem máscara.';
+  $('maskStatus').className='success';if(!quiet)setTimeout(()=>{$('maskStatus').textContent=''},2600);return true;
+}
+$('saveMask').onclick=async()=>{try{await saveCurrentMask()}catch(e){displayError($('maskStatus'),e.message)}};
+async function goToFrame(frameIndex,target=null,autoMask=true) {
+  if(!info)return;
+  frameIndex=clamp(Math.round(Number(frameIndex)||0),0,Math.max(0,Math.floor(info.duration*info.fps)));
+  const token=++frameToken;
+  if(maskDirty){try{await saveCurrentMask(true)}catch(e){displayError($('maskStatus'),`A edição anterior não foi salva: ${e.message}`);return} if(token!==frameToken)return}
+  currentFrame=frameIndex;$('seek').value=String(currentFrame/info.fps);updateOriginalFrame();$('previewCompare').style.display='none';
+  setTarget(null);
+  try{
+    const hadSaved=await loadSavedMask(currentFrame);
+    if(token!==frameToken)return;
+    const entry=savedMasks.find(item=>Number(item.frame)===currentFrame);
+    if(target)setTarget(target);else if(entry?.target_text)setTarget({text:entry.target_text,bbox:entry.bbox});
+    if(target&&autoMask&&!hadSaved)addOCRMask();
+    updateBrushValue();
+  }catch(e){if(token===frameToken)displayError($('maskStatus'),e.message)}
+}
+$('seek').addEventListener('input',()=>{const f=Math.round(Number($('seek').value)*info.fps);$('time').textContent=`${formatTime(f/info.fps)} · quadro ${f}`;clearTimeout(seekTimer);seekTimer=setTimeout(()=>{if(f!==currentFrame)goToFrame(f)},160)});
+$('seek').addEventListener('change',()=>{clearTimeout(seekTimer);goToFrame(Math.round(Number($('seek').value)*info.fps))});
+$('prevFrame').onclick=()=>goToFrame(currentFrame-1);
+$('nextFrame').onclick=()=>goToFrame(currentFrame+1);
+
+async function deleteMask(frameIndex){
+  try{await parseResponse(await fetch(`/api/${jobId}/masks/${frameIndex}`,{method:'DELETE'}));await refreshMaskList();if(frameIndex===currentFrame){baseMaskData=null;actions=[];redoActions=[];redrawCanvas();maskDirty=false} }
+  catch(e){displayError($('maskStatus'),e.message)}
+}
+$('clearAllMasks').onclick=async()=>{
+  if(!savedMasks.length)return;if(!confirm('Apagar todas as máscaras salvas deste vídeo?'))return;
+  try{await parseResponse(await fetch(`/api/${jobId}/masks`,{method:'DELETE'}));savedMasks=[];await refreshMaskList();baseMaskData=null;actions=[];redoActions=[];redrawCanvas();maskDirty=false;setTarget(null)}catch(e){displayError($('maskStatus'),e.message)}
+};
+
+async function activateJob(id,videoInfo,name,restored=false){
+  jobId=id;info=videoInfo;sessionStorage.setItem('limpavideo_job_id',jobId);$('scanSection').style.display='block';$('editor').style.display='block';
+  $('fileMeta').textContent=restored?`Sessão restaurada · ${name||'vídeo MP4'}`:(name||'MP4 carregado');showInfo();
+  $('seek').max=info.duration||1;$('seek').step=(1/info.fps).toFixed(6);canvas.width=info.width;canvas.height=info.height;
+  rangeIn=0;rangeOut=null;updateRangeLabel();fitStage();
+  currentFrame=0;baseMaskData=null;actions=[];redoActions=[];maskDirty=false;setTarget(null);redrawCanvas();updateOriginalFrame();requestAnimationFrame(updateBrushValue);
+  await refreshMaskList();await loadSavedMask(0);await refreshMaskList();updateSampleEstimate();
+  if(restored){await restoreJobPanels()}
+}
+async function uploadFile(file){
+  if(!file)return;if(!file.name.toLowerCase().endsWith('.mp4')){alert('Escolha um arquivo MP4.');fileInput.value='';return}
+  $('fileMeta').textContent=`${file.name} · ${(file.size/1048576).toFixed(1)} MB · enviando…`;
+  $('scanStatus').style.display='none';$('status').style.display='none';$('scanSummary').textContent='';$('scanResults').replaceChildren();$('moreResults').style.display='none';
+  const form=new FormData();form.append('video',file);
+  try{const data=await parseResponse(await fetch('/api/upload',{method:'POST',body:form}));scanFrames=[];savedMasks=[];await activateJob(data.id,data.info,file.name,false);$('maskStatus').textContent='Vídeo carregado. Analise o OCR ou navegue quadro a quadro.';$('maskStatus').className='help'}
+  catch(e){$('fileMeta').textContent=e.message;alert(e.message)}
+}
+fileInput.addEventListener('change',()=>uploadFile(fileInput.files[0]));
+['dragenter','dragover'].forEach(type=>document.body.addEventListener(type,event=>{event.preventDefault();document.body.classList.add('drop')}));
+['dragleave','drop'].forEach(type=>document.body.addEventListener(type,event=>{event.preventDefault();if(type==='dragleave'&&event.relatedTarget)return;document.body.classList.remove('drop')}));
+document.body.addEventListener('drop',event=>{const file=event.dataTransfer?.files?.[0];if(file)uploadFile(file)});
+
+function addTextNode(parent,tag,text,className=''){const node=document.createElement(tag);node.textContent=text;if(className)node.className=className;parent.appendChild(node);return node}
+let displayedScanCount=0;
+function appendScanBatch(){
+  const grid=$('scanResults'),batch=scanFrames.slice(displayedScanCount,displayedScanCount+200);
+  for(const item of batch){
+    const card=document.createElement('article');card.className='scanCard';
+    const img=document.createElement('img');img.loading='lazy';img.alt=`Quadro ${item.frame} marcado`;img.src=`/api/${jobId}/scan/frame/${encodeURIComponent(item.marked)}`;
+    const meta=document.createElement('div');meta.className='meta';addTextNode(meta,'strong',`${item.timecode} · quadro ${item.frame}`);
+    const frameButton=document.createElement('button');frameButton.className='button secondary smallButton';frameButton.type='button';frameButton.textContent='Editar quadro';frameButton.onclick=()=>goToFrame(item.frame,null,true);meta.appendChild(frameButton);
+    for(const line of item.lines){
+      const block=document.createElement('div');block.style.marginTop='8px';addTextNode(block,'p',`“${line.text}” · OCR ${line.confidence}%`);
+      if(line.classification!=='Texto')addTextNode(block,'span',line.classification,'badge');
+      const edit=document.createElement('button');edit.className='button ghost smallButton';edit.type='button';edit.textContent='Editar texto e criar máscara';edit.onclick=()=>goToFrame(item.frame,{text:line.text,bbox:line.box},true);block.appendChild(edit);meta.appendChild(block);
+    }
+    card.append(img,meta);grid.appendChild(card);
+  }
+  displayedScanCount+=batch.length;
+  const more=$('moreResults');more.style.display=displayedScanCount<scanFrames.length?'inline-flex':'none';
+  more.textContent=`Carregar mais quadros (${displayedScanCount} de ${scanFrames.length})`;
+}
+function showScanResults(frames){
+  scanFrames=frames||[];const grid=$('scanResults');grid.replaceChildren();displayedScanCount=0;
+  if(!scanFrames.length){$('moreResults').style.display='none';$('scanSummary').textContent+=' Nenhum texto reconhecido nos quadros amostrados; isso não descarta logotipos sem texto nem legendas muito rápidas.';return}
+  appendScanBatch();
+  if(scanFrames.length>200)$('scanSummary').textContent+=` Mostrando os resultados em lotes de 200; o ZIP contém todos os quadros.`;
+}
+ $('moreResults').onclick=appendScanBatch;
+function estimateSamples(){
+  if(!info)return 0;
+  return Math.ceil((info.duration||0)/Math.max(Number($('scanInterval').value)||0.5,0.1));
+}
+function updateSampleEstimate(){
+  const count=estimateSamples();
+  $('sampleEstimate').textContent=info?`≈ ${count} amostras`+(count>3000?' · acima do limite de 3.000; aumente o intervalo':''):'';
+}
+$('scanInterval').addEventListener('change',updateSampleEstimate);
+async function startScan(){
+  if(estimateSamples()>3000){alert('Essa amostragem passa de 3.000 quadros. Aumente o intervalo.');return}
+  const button=$('scanButton');button.disabled=true;$('scanStatus').style.display='block';$('scanStatusText').className='';$('scanStatusText').textContent='Iniciando OCR…';$('scanProgressBar').style.width='0%';$('scanDownload').style.display='none';$('scanResults').replaceChildren();$('moreResults').style.display='none';$('scanSummary').textContent='';
+  try{const form=new FormData();scanInterval=Number($('scanInterval').value);form.append('interval',String(scanInterval));await parseResponse(await fetch(`/api/${jobId}/scan`,{method:'POST',body:form}));pollScan()}
+  catch(e){displayError($('scanStatusText'),e.message);button.disabled=false}
+}
+$('scanButton').onclick=startScan;
+async function pollScan(){
+  try{const state=await parseResponse(await fetch(`/api/${jobId}/scan/status`));$('scanProgressBar').style.width=`${state.progress}%`;
+    if(state.status==='processing'){$('scanStatusText').textContent=`Analisando amostras… ${state.progress}%`;setTimeout(pollScan,900);return}
+    if(state.status==='error')throw new Error(state.error||'A análise OCR falhou.');
+    if(state.status==='done'){
+      const data=await parseResponse(await fetch(`/api/${jobId}/scan/results`));scanInterval=data.interval;
+      $('scanStatusText').textContent='Análise concluída.';$('scanStatusText').className='success';
+      $('scanSummary').textContent=`${data.detected} quadro(s) com texto reconhecido em ${data.total} amostras (intervalo ${data.interval}s). Clique em um texto para editá-lo.`;
+      $('scanDownload').href=`/api/${jobId}/scan/download`;$('scanDownload').style.display='inline-flex';showScanResults(data.frames);
+    }$('scanButton').disabled=false;
+  }catch(e){displayError($('scanStatusText'),e.message);$('scanButton').disabled=false}
+}
+
+async function previewCurrentFrame(){
+  const button=$('previewButton');button.disabled=true;$('maskStatus').textContent='Gerando prévia do quadro…';$('maskStatus').className='help';
+  try{const blob=await createMaskBlob(),form=new FormData();form.append('mask',blob,'mask.png');form.append('frame',String(currentFrame));form.append('method',$('method').value);form.append('radius',$('radius').value);form.append('mask_expand',$('maskExpand').value);
+    const response=await fetch(`/api/${jobId}/preview`,{method:'POST',body:form});
+    if(!response.ok){await apiJSON(response);return}
+    if(previewObjectUrl)URL.revokeObjectURL(previewObjectUrl);previewObjectUrl=URL.createObjectURL(await response.blob());
+    $('previewBefore').src=`/api/${jobId}/frame?frame=${currentFrame}&v=${Date.now()}`;$('previewAfter').src=previewObjectUrl;$('previewCompare').style.display='grid';
+    $('maskStatus').textContent='Prévia pronta. Confira lado a lado antes de exportar.';$('maskStatus').className='success';
+  }catch(e){displayError($('maskStatus'),e.message)}finally{button.disabled=false}
+}
+$('previewButton').onclick=previewCurrentFrame;
+
+$('process').onclick=async()=>{
+  const button=$('process');button.disabled=true;$('status').style.display='block';$('statusText').textContent='Preparando o vídeo completo…';$('statusText').className='';$('downloadWrap').replaceChildren();$('progressBar').style.width='0%';
+  try{
+    if(maskDirty)await saveCurrentMask(true);
+    const mode=$('maskMode').value,form=new FormData();form.append('mask_mode',mode);form.append('method',$('method').value);form.append('radius',$('radius').value);form.append('mask_expand',$('maskExpand').value);
+    if(mode==='fixed'){const blob=await createMaskBlob();form.append('mask',blob,'mask.png')}
+    form.append('start',String(rangeIn||0));form.append('end',String(rangeOut??info.duration));
+    const start=await parseResponse(await fetch(`/api/${jobId}/process`,{method:'POST',body:form}));
+    $('statusText').textContent=`Processamento iniciado · ${start.masks} máscara(s) · modo ${start.mode}.`;pollProcess();
+  }catch(e){displayError($('statusText'),e.message);button.disabled=false}
+};
+async function pollProcess(){
+  try{const state=await parseResponse(await fetch(`/api/${jobId}/status`));$('progressBar').style.width=`${state.progress}%`;
+    if(state.status==='processing'){$('statusText').textContent=state.detail||`Reconstruindo e exportando o vídeo completo… ${state.progress}%`;setTimeout(pollProcess,900);return}
+    if(state.status==='error')throw new Error(state.error||'O processamento falhou.');
+    if(state.status==='done'){
+      $('statusText').textContent='Concluído. O MP4 completo está pronto para download.';$('statusText').className='success';
+      const link=document.createElement('a');link.className='button';link.href=`/api/${jobId}/download`;link.textContent='Baixar vídeo_editado.mp4';$('downloadWrap').appendChild(link);
+    }else{$('statusText').textContent='Aguardando processamento…';setTimeout(pollProcess,700);return}
+  }catch(e){displayError($('statusText'),e.message)}finally{if($('statusText').className==='error'||$('statusText').className==='success')$('process').disabled=false}
+}
+async function restoreJobPanels(){
+  try{
+    const data=await parseResponse(await fetch(`/api/${jobId}/info`));
+    if(data.scan_status==='processing'){$('scanStatus').style.display='block';pollScan()}
+    else if(data.scan_status==='done'){
+      const results=await parseResponse(await fetch(`/api/${jobId}/scan/results`));scanInterval=results.interval;
+      $('scanSummary').textContent=`${results.detected} quadro(s) com texto reconhecido em ${results.total} amostras (sessão restaurada).`;
+      $('scanDownload').href=`/api/${jobId}/scan/download`;$('scanDownload').style.display='inline-flex';showScanResults(results.frames);
+    }else if(data.scan_status==='error'){displayError($('scanStatusText'),data.scan_error||'A análise anterior foi interrompida.');$('scanStatus').style.display='block'}
+    if(data.status==='processing'){$('status').style.display='block';$('process').disabled=true;pollProcess()}
+    else if(data.status==='done'){
+      $('status').style.display='block';$('statusText').textContent='Vídeo finalizado anteriormente.';$('statusText').className='success';
+      const link=document.createElement('a');link.className='button';link.href=`/api/${jobId}/download`;link.textContent='Baixar vídeo_editado.mp4';$('downloadWrap').replaceChildren(link);
+    }else if(data.status==='error'){$('status').style.display='block';displayError($('statusText'),data.error||'O processamento foi interrompido.')}
+  }catch(e){sessionStorage.removeItem('limpavideo_job_id');displayError($('maskStatus'),e.message)}
+}
+async function restoreSession(){
+  const id=sessionStorage.getItem('limpavideo_job_id');if(!id)return;
+  try{const data=await parseResponse(await fetch(`/api/${id}/info`));await activateJob(id,data.info,data.name,true)}
+  catch(e){sessionStorage.removeItem('limpavideo_job_id');$('fileMeta').textContent=e.message}
+}
+function fitStage(){
+  if(!info)return;
+  const parent=$('stage').parentElement.clientWidth-20;
+  $('stage').style.width=`${Math.max(240,Math.min(info.width,960,parent))}px`;
+  $('stage').style.aspectRatio=`${info.width}/${info.height}`;
+  updateBrushValue();
+}
+function updateRangeLabel(){
+  if(!info||rangeOut==null)$('rangeLabel').textContent='Trecho: vídeo inteiro';
+  else $('rangeLabel').textContent=`Trecho: ${formatTime(rangeIn)} → ${formatTime(rangeOut)}`;
+}
+$('markIn').onclick=()=>{if(!info)return;rangeIn=currentFrame/info.fps;if(rangeOut!=null&&rangeOut<=rangeIn)rangeOut=Math.min(info.duration,rangeIn+1/info.fps);updateRangeLabel()};
+$('markOut').onclick=()=>{if(!info)return;rangeOut=Math.max(currentFrame/info.fps,rangeIn+1/info.fps);updateRangeLabel()};
+$('clearRange').onclick=()=>{rangeIn=0;rangeOut=null;updateRangeLabel()};
+window.addEventListener('keydown',event=>{
+  if(event.target.matches('input,textarea,select')||!jobId)return;
+  const key=event.key.toLowerCase();
+  if(key==='arrowleft'){event.preventDefault();goToFrame(currentFrame-(event.shiftKey?10:1))}
+  else if(key==='arrowright'){event.preventDefault();goToFrame(currentFrame+(event.shiftKey?10:1))}
+  else if(key==='b')setTool('brush');
+  else if(key==='e')setTool('eraser');
+  else if(key==='r')setTool('rect');
+  else if(key==='['||key===']'){$('size').value=String(clamp(Number($('size').value)+(key===']'?2:-2),2,70));updateBrushValue()}
+  else if((event.ctrlKey||event.metaKey)&&key==='z'){event.preventDefault();(event.shiftKey?$('redo'):$('undo')).click()}
+});
+window.addEventListener('beforeunload',event=>{if(maskDirty){event.preventDefault();event.returnValue=''}});
+window.addEventListener('resize',fitStage);
+async function checkHealth(){
+  try{
+    const data=await parseResponse(await fetch('/api/health'));
+    const missing=[];
+    if(!data.ffmpeg)missing.push('FFmpeg');
+    if(!data.ffprobe)missing.push('ffprobe');
+    if(!data.tesseract)missing.push('Tesseract OCR (por e eng)');
+    if(missing.length){$('health').style.display='block';$('health').textContent=`Faltando no PATH: ${missing.join(', ')}. Instale antes de analisar ou exportar.`}
+  }catch(_){}
+}
+window.addEventListener('DOMContentLoaded',()=>{checkHealth();restoreSession()});
+</script>
+</body>
+</html>
