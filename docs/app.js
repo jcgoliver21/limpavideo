@@ -557,7 +557,8 @@ async function readText() {
   $("hint").className = "help";
   try {
     if (!ocrWorker) {
-      const Tesseract = (await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js")).default;
+      const Tesseract = window.Tesseract;
+      if (!Tesseract || typeof Tesseract.createWorker !== "function") throw new Error("Tesseract não foi carregado. Recarregue a página.");
       ocrWorker = await Tesseract.createWorker("por+eng", 1, {
         workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js",
         corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1/tesseract-core-simd-lstm.wasm.js",
@@ -639,7 +640,8 @@ async function autoRemove() {
   if (!ocrWorker) {
     try {
       setStatus("Preparando o leitor de texto…", 0.01);
-      const Tesseract = (await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js")).default;
+      const Tesseract = window.Tesseract;
+      if (!Tesseract || typeof Tesseract.createWorker !== "function") throw new Error("Tesseract não foi carregado. Recarregue a página.");
       ocrWorker = await Tesseract.createWorker("por+eng", 1, {
         workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js",
         corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1/tesseract-core-simd-lstm.wasm.js",
